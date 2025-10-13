@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datapilot Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    #chatbox {
+      width: 350px;
+      height: 500px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      margin: 40px auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 15px;
+    }
+    #input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    #userInput {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      outline: none;
+    }
+    #sendBtn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="chatbox">
+    <div id="messages"></div>
+    <div id="input">
+      <input id="userInput" type="text" placeholder="Nachricht eingeben..." />
+      <button id="sendBtn">Senden</button>
+    </div>
+  </div>
+
+  <script>
+    const messages = document.getElementById("messages");
+    const input = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage("Du", text);
+      input.value = "";
+
+      const res = await fetch("https://eo639chyfs9mcu4.m.pipedream.net", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+
+      const data = await res.json();
+      addMessage("Bot", data.reply || "Ich habe deine Nachricht empfangen!");
+    }
+
+    function addMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.innerHTML = `<b>${sender}:</b> ${text}`;
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    sendBtn.onclick = sendMessage;
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
