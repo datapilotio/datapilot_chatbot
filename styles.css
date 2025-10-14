@@ -1,2 +1,89 @@
-/* Minimal-Styles fürs Iframe (kommt aus widget.js) */
-:root { --dp-accent:#2563eb; --dp-shadow:0 6px 24px rgba(0,0,0,.12); }
+:root {
+  --dp-accent: #2563eb; /* Blau */
+  --dp-shadow: 0 6px 24px rgba(0,0,0,.12);
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+#dp-panel {
+  width: 400px;
+  height: 520px;
+  background: #fff;
+  box-shadow: var(--dp-shadow);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#dp-header {
+  background: var(--dp-accent);
+  color: #fff;
+  padding: 14px 16px;
+}
+
+#dp-header .title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+#dp-header .subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+#dp-messages {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dp-msg {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.from-bot {
+  background: #f3f4f6;
+  align-self: flex-start;
+}
+
+.from-user {
+  background: #e8f0ff;
+  align-self: flex-end;
+}
+
+#dp-inputbar {
+  display: flex;
+  padding: 10px;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+#dp-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+#dp-send {
+  background: var(--dp-accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
