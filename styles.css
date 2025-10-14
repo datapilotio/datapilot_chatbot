@@ -160,3 +160,9 @@ body {
   margin-top: 4px;
   text-align: right;
 }
+.msg-time {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+  text-align: right;
+}
