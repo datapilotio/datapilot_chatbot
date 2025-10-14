@@ -22,46 +22,69 @@
   </div>
 
   <script>
+    // === Konfiguration ===
     const ENDPOINT = "https://eozh4llwhc0qn35.m.pipedream.net";
-    const PROJECT = "datapilot_widget";
-    const sessionId = Math.random().toString(36).substring(2);
+    const PROJECT  = "datapilot_widget";
+    const sessionId = (localStorage.getItem("dp_sid") || (Date.now().toString(36)+Math.random().toString(36).slice(2)));
+    localStorage.setItem("dp_sid", sessionId);
 
-    const botName = "Mia (Datapilot Assistentin)";
-    let userName = null;
+    // Zufällige Bot-Identität (persistiert in localStorage)
+    const personas = [
+      { name: "Mia",   role: "Datapilot Assistentin", emoji: "🤖" },
+      { name: "Tom",   role: "Datapilot Support",     emoji: "🧠" },
+      { name: "Alex",  role: "Datapilot Assistent",   emoji: "🛠️" },
+      { name: "Lena",  role: "Datapilot Support",     emoji: "✨" },
+      { name: "Max",   role: "Datapilot Assistent",   emoji: "⚙️" }
+    ];
+    function pickPersona() {
+      const saved = localStorage.getItem("dp_persona");
+      if (saved) return JSON.parse(saved);
+      const p = personas[Math.floor(Math.random() * personas.length)];
+      localStorage.setItem("dp_persona", JSON.stringify(p));
+      return p;
+    }
+    const persona = pickPersona();
 
+    // DOM-Refs
     const btn = document.getElementById("dp-chat-button");
     const win = document.getElementById("dp-chat-window");
+    const header = document.getElementById("dp-header");
     const input = document.getElementById("dp-input");
-    const send = document.getElementById("dp-send");
+    const send  = document.getElementById("dp-send");
     const messages = document.getElementById("dp-messages");
 
-    let greeted = false;
+    // Header mit Persona setzen
+    header.textContent = `${persona.emoji} ${persona.name} – ${persona.role}`;
 
-    // Begrüßung bei erstem Öffnen
+    // Begrüßung nur beim ersten Öffnen
+    let greeted = false;
+    // Nutzername (wenn erkannt), wird lokal gespeichert
+    let userName = localStorage.getItem("dp_username") || null;
+
     btn.addEventListener("click", () => {
       const isOpen = win.style.display === "flex";
       win.style.display = isOpen ? "none" : "flex";
-
       if (!isOpen && !greeted) {
-        pushMsg(`👋 Hallo! Ich bin ${botName}. Wie darf ich Sie ansprechen?`);
+        if (userName) {
+          pushMsg(`👋 Hallo ${userName}! Ich bin ${persona.name}. Wie kann ich helfen?`);
+        } else {
+          pushMsg(`👋 Hallo! Ich bin ${persona.name}. Wie darf ich Sie ansprechen?`);
+        }
         greeted = true;
       }
-
       if (!isOpen) input.focus();
     });
 
     send.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") sendMessage();
-    });
+    input.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
 
-    // Zeitformat
+    // Zeitformat (de-DE)
     function formatTime() {
       const now = new Date();
       return now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
     }
 
-    // Nachricht anzeigen mit Uhrzeit
+    // Nachricht ins UI pushen (mit Uhrzeit)
     function pushMsg(text, from = "bot") {
       const wrapper = document.createElement("div");
       wrapper.className = `dp-msg ${from === "user" ? "from-user" : "from-bot"}`;
@@ -75,18 +98,32 @@
 
       wrapper.appendChild(msgText);
       wrapper.appendChild(timeStamp);
-
       messages.appendChild(wrapper);
       messages.scrollTop = messages.scrollHeight;
     }
 
-    // Eingabe sperren während Anfrage
     function disableUI(disabled) {
       input.disabled = disabled;
       send.disabled = disabled;
     }
 
-    // Nachricht senden
+    // Einfache Namenerkennung ("Ich heiße ...", "Mein Name ist ...", "Ich bin ...")
+    function tryCaptureName(text) {
+      const patterns = [
+        /mein name ist\s+([a-zäöüß\-']{2,})/i,
+        /ich heiße\s+([a-zäöüß\-']{2,})/i,
+        /ich bin\s+([a-zäöüß\-']{2,})/i
+      ];
+      for (const re of patterns) {
+        const m = text.match(re);
+        if (m && m[1]) {
+          const name = m[1].trim();
+          if (name.length <= 30) return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+      }
+      return null;
+    }
+
     function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
@@ -95,17 +132,20 @@
       input.value = "";
       disableUI(true);
 
-      // Nutzername erkennen
+      // Falls noch kein Name gespeichert ist, jetzt erkennen
       if (!userName) {
-        const match = text.match(/ich heiße\s+(\w+)/i);
-        if (match) {
-          userName = match[1];
+        const possible = tryCaptureName(text);
+        if (possible) {
+          userName = possible;
+          localStorage.setItem("dp_username", userName);
           pushMsg(`Freut mich, dich kennenzulernen, ${userName}! Wie kann ich helfen?`);
           disableUI(false);
+          input.focus();
           return;
         }
       }
 
+      // Request an deinen Pipedream-Endpoint (regelbasierte Antwort dort)
       fetch(ENDPOINT, {
         method: "POST",
         headers: {
@@ -118,12 +158,15 @@
           sessionId,
           url: location.href,
           text,
-          user: userName
+          user: userName,
+          persona: persona.name
         })
       })
       .then(res => res.json())
       .then(data => {
-        const reply = data.reply || `Ich habe deine Nachricht erhalten, ${userName || "mein Freund"}.`;
+        const reply = data.reply || (userName
+          ? `Ich habe deine Nachricht erhalten, ${userName}.`
+          : "Ich habe Ihre Nachricht erhalten, vielen Dank.");
         pushMsg(reply, "bot");
       })
       .catch(err => {
