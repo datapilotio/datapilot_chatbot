@@ -32,7 +32,6 @@
     const send = document.getElementById("dp-send");
     const messages = document.getElementById("dp-messages");
 
-    // === Begrüßung nur beim ersten Öffnen ===
     let greeted = false;
 
     btn.addEventListener("click", () => {
@@ -52,11 +51,26 @@
       if (e.key === "Enter") sendMessage();
     });
 
+    function formatTime() {
+      const now = new Date();
+      return now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+    }
+
     function pushMsg(text, from = "bot") {
-      const el = document.createElement("div");
-      el.className = `dp-msg ${from === "user" ? "from-user" : "from-bot"}`;
-      el.textContent = text;
-      messages.appendChild(el);
+      const wrapper = document.createElement("div");
+      wrapper.className = `dp-msg ${from === "user" ? "from-user" : "from-bot"}`;
+
+      const msgText = document.createElement("div");
+      msgText.textContent = text;
+
+      const timeStamp = document.createElement("div");
+      timeStamp.className = "msg-time";
+      timeStamp.textContent = formatTime();
+
+      wrapper.appendChild(msgText);
+      wrapper.appendChild(timeStamp);
+
+      messages.appendChild(wrapper);
       messages.scrollTop = messages.scrollHeight;
     }
 
