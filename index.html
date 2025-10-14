@@ -3,198 +3,214 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Datapilot KI-Chat</title>
+  <title>Datapilot Chatbot</title>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f9fafb;
       margin: 0;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
     }
 
-    /* 💬 Chat-Button unten rechts */
-    #dp-launcher {
+    /* Chat-Button */
+    #dp-chat-button {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      bottom: 25px;
+      right: 25px;
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      background: #2563eb;
-      color: #fff;
-      border: none;
+      background-color: #007bff;
+      color: white;
+      font-size: 30px;
+      text-align: center;
+      line-height: 60px;
       cursor: pointer;
-      font-size: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-      z-index: 9999;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
       transition: all 0.3s ease;
+      z-index: 9999;
     }
 
-    #dp-launcher:hover {
-      background: #1e40af;
-      transform: scale(1.1);
+    #dp-chat-button:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
     }
 
-    /* Chatfenster */
-    #dp-panel {
+    /* Chat-Fenster */
+    #dp-chat-window {
+      display: none;
       position: fixed;
       bottom: 90px;
-      right: 20px;
-      width: 320px;
-      height: 450px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-      display: flex;
-      flex-direction: column;
+      right: 25px;
+      width: 350px;
+      height: 500px;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
       overflow: hidden;
+      flex-direction: column;
       z-index: 9998;
     }
 
-    .hidden {
-      display: none;
-    }
-
     #dp-header {
-      background: #2563eb;
-      color: #fff;
-      padding: 10px;
-      text-align: center;
+      background: #007bff;
+      color: white;
+      padding: 12px;
       font-weight: bold;
+      text-align: center;
     }
 
     #dp-messages {
       flex: 1;
       padding: 10px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dp-msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 14px;
+      line-height: 1.4;
+      animation: fadeIn 0.2s ease-in-out;
     }
 
     .from-user {
-      text-align: right;
-      background: #dbeafe;
-      padding: 6px 10px;
-      border-radius: 8px;
-      margin: 4px 0;
-      display: inline-block;
+      background: #007bff;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
     }
 
     .from-bot {
-      text-align: left;
-      background: #f3f4f6;
-      padding: 6px 10px;
-      border-radius: 8px;
-      margin: 4px 0;
-      display: inline-block;
+      background: #f1f1f1;
+      color: #000;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
     }
 
-    #dp-inputbar {
+    #dp-input-area {
       display: flex;
-      border-top: 1px solid #ccc;
+      border-top: 1px solid #ddd;
     }
 
     #dp-input {
       flex: 1;
-      border: none;
       padding: 10px;
-      font-size: 14px;
+      border: none;
       outline: none;
+      font-size: 14px;
     }
 
     #dp-send {
-      background: #2563eb;
-      color: #fff;
+      background: #007bff;
+      color: white;
       border: none;
-      padding: 10px 15px;
+      padding: 0 18px;
       cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
     }
 
     #dp-send:hover {
-      background: #1e40af;
+      background: #0056b3;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 
 <body>
-  <!-- 💬 Start-Button -->
-  <button id="dp-launcher" aria-label="Chat öffnen">💬</button>
+  <!-- Chat-Button -->
+  <div id="dp-chat-button">💬</div>
 
   <!-- Chat-Fenster -->
-  <section id="dp-panel" class="hidden" role="dialog" aria-label="Chatfenster">
-    <header id="dp-header">KI-Chat</header>
+  <div id="dp-chat-window">
+    <div id="dp-header">💬 Datapilot Support</div>
     <div id="dp-messages"></div>
-    <div id="dp-inputbar">
-      <input id="dp-input" placeholder="Schreib eine Nachricht..." />
-      <button id="dp-send">Senden</button>
+    <div id="dp-input-area">
+      <input id="dp-input" type="text" placeholder="Nachricht schreiben..." />
+      <button id="dp-send">➤</button>
     </div>
-  </section>
+  </div>
 
   <script>
-    const ENDPOINT = "https://eozh4llwhc0qn35.m.pipedream.net"; // dein Webhook
-    const PROJECT = "datapilot_widget_v1";
-    const sessionId = Math.random().toString(36).substring(2, 10);
+    const ENDPOINT = "https://eozh4llwhc0qn35.m.pipedream.net";
+    const PROJECT = "datapilot_widget";
+    const sessionId = Math.random().toString(36).substring(2);
 
-    const launcher = document.getElementById("dp-launcher");
-    const panel = document.getElementById("dp-panel");
-    const messages = document.getElementById("dp-messages");
+    const btn = document.getElementById("dp-chat-button");
+    const win = document.getElementById("dp-chat-window");
     const input = document.getElementById("dp-input");
-    const sendBtn = document.getElementById("dp-send");
+    const send = document.getElementById("dp-send");
+    const messages = document.getElementById("dp-messages");
 
-    // Chatfenster öffnen/schließen
-    launcher.onclick = () => {
-      panel.classList.toggle("hidden");
-    };
-
-    // Nachricht senden
-    sendBtn.onclick = sendMessage;
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+    btn.addEventListener("click", () => {
+      win.style.display = win.style.display === "flex" ? "none" : "flex";
+      if (win.style.display === "flex") input.focus();
     });
 
-    function appendMessage(text, sender) {
-      const msg = document.createElement("div");
-      msg.className = sender === "user" ? "from-user" : "from-bot";
-      msg.innerText = text;
-      messages.appendChild(msg);
+    send.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function pushMsg(text, from = "bot") {
+      const el = document.createElement("div");
+      el.className = `dp-msg ${from === "user" ? "from-user" : "from-bot"}`;
+      el.textContent = text;
+      messages.appendChild(el);
       messages.scrollTop = messages.scrollHeight;
     }
 
-    async function sendMessage() {
+    function disableUI(disabled) {
+      input.disabled = disabled;
+      send.disabled = disabled;
+    }
+
+    function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
 
-      appendMessage(text, "user");
+      pushMsg(text, "user");
       input.value = "";
+      disableUI(true);
 
-      try {
-        const res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Widget": "datapilot_widget",
-          },
-          body: JSON.stringify({
-            source: "web_widget",
-            project: PROJECT,
-            sessionId,
-            text,
-            url: location.href,
-          }),
-        });
-
-        const data = await res.json();
-        appendMessage(data.reply || "Danke fürs Schreiben!", "bot");
-      } catch (err) {
-        appendMessage("⚠️ Verbindungsfehler – bitte später erneut versuchen.", "bot");
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Widget": "datapilot_widget"
+        },
+        body: JSON.stringify({
+          source: "web_widget",
+          project: PROJECT,
+          sessionId,
+          url: location.href,
+          text
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const reply = data.reply || "Ich habe Ihre Nachricht erhalten, vielen Dank.";
+        pushMsg(reply, "bot");
+      })
+      .catch(err => {
+        pushMsg("Verbindungsfehler – bitte später erneut versuchen.", "bot");
         console.error(err);
-      }
+      })
+      .finally(() => {
+        disableUI(false);
+        input.focus();
+      });
     }
   </script>
 </body>
-</html> 
+</html>
