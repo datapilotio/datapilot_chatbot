@@ -13,7 +13,7 @@
 
   <!-- Chat-Fenster -->
   <div id="dp-chat-window">
-    <div id="dp-header">💬 Datapilot Support</div>
+    <div id="dp-header">🤖 Datapilot Assistent</div>
     <div id="dp-messages"></div>
     <div id="dp-input-area">
       <input id="dp-input" type="text" placeholder="Nachricht schreiben..." />
@@ -26,6 +26,9 @@
     const PROJECT = "datapilot_widget";
     const sessionId = Math.random().toString(36).substring(2);
 
+    const botName = "Mia (Datapilot Assistentin)";
+    let userName = null;
+
     const btn = document.getElementById("dp-chat-button");
     const win = document.getElementById("dp-chat-window");
     const input = document.getElementById("dp-input");
@@ -34,12 +37,13 @@
 
     let greeted = false;
 
+    // Begrüßung bei erstem Öffnen
     btn.addEventListener("click", () => {
       const isOpen = win.style.display === "flex";
       win.style.display = isOpen ? "none" : "flex";
 
       if (!isOpen && !greeted) {
-        pushMsg("👋 Hallo! Ich bin der Datapilot-Assistent. Wie kann ich Ihnen heute helfen?");
+        pushMsg(`👋 Hallo! Ich bin ${botName}. Wie darf ich Sie ansprechen?`);
         greeted = true;
       }
 
@@ -51,11 +55,13 @@
       if (e.key === "Enter") sendMessage();
     });
 
+    // Zeitformat
     function formatTime() {
       const now = new Date();
       return now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
     }
 
+    // Nachricht anzeigen mit Uhrzeit
     function pushMsg(text, from = "bot") {
       const wrapper = document.createElement("div");
       wrapper.className = `dp-msg ${from === "user" ? "from-user" : "from-bot"}`;
@@ -74,11 +80,13 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
+    // Eingabe sperren während Anfrage
     function disableUI(disabled) {
       input.disabled = disabled;
       send.disabled = disabled;
     }
 
+    // Nachricht senden
     function sendMessage() {
       const text = input.value.trim();
       if (!text) return;
@@ -86,6 +94,17 @@
       pushMsg(text, "user");
       input.value = "";
       disableUI(true);
+
+      // Nutzername erkennen
+      if (!userName) {
+        const match = text.match(/ich heiße\s+(\w+)/i);
+        if (match) {
+          userName = match[1];
+          pushMsg(`Freut mich, dich kennenzulernen, ${userName}! Wie kann ich helfen?`);
+          disableUI(false);
+          return;
+        }
+      }
 
       fetch(ENDPOINT, {
         method: "POST",
@@ -98,12 +117,13 @@
           project: PROJECT,
           sessionId,
           url: location.href,
-          text
+          text,
+          user: userName
         })
       })
       .then(res => res.json())
       .then(data => {
-        const reply = data.reply || "Ich habe Ihre Nachricht erhalten, vielen Dank.";
+        const reply = data.reply || `Ich habe deine Nachricht erhalten, ${userName || "mein Freund"}.`;
         pushMsg(reply, "bot");
       })
       .catch(err => {
