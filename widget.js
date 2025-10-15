@@ -1,58 +1,54 @@
 (function () {
-  const script    = document.currentScript;
-  const ENDPOINT  = script.getAttribute('data-endpoint') || '';
-  const CHAT_URL  = script.getAttribute('data-chat-url') || 'Chatbot.html';
+  const cfg = document.currentScript?.dataset || {};
+  const ENDPOINT = cfg.endpoint || "";
+  const TITLE = cfg.title || "Assistent";
+  const ACCENT = cfg.accent || "#2563eb";
 
-  // --- Iframe (geschlossen, feste Größe) ---
-  const iframe = document.createElement('iframe');
-  iframe.src   = CHAT_URL;
-  iframe.id    = 'datapilot-frame';
-  iframe.style.cssText = `
-    position: fixed; inset:auto 24px 24px auto;
-    width: 380px; height: 520px;
-    display: none; border: 0; border-radius: 14px;
-    box-shadow: var(--dp-shadow);
-    z-index: 2147483647; background:#fff;
-  `;
-  iframe.setAttribute('title','Chatfenster');
-  iframe.setAttribute('aria-hidden','true');
-  document.body.appendChild(iframe);
-
-  // --- Button (kleines blaues Icon) ---
-  const btn = document.createElement('button');
-  btn.id = 'datapilot-button';
-  btn.setAttribute('aria-expanded','false');
-  btn.setAttribute('aria-controls','datapilot-frame');
+  // Button (kleines, rundes, blaues Icon)
+  const btn = document.createElement("button");
+  btn.setAttribute("aria-label", "Chat öffnen");
+  btn.id = "dp-btn";
   btn.style.cssText = `
-    position: fixed; inset:auto 24px 24px auto;
-    width: 56px; height: 56px; border: none; border-radius: 50%;
-    background: #2563eb; color: #fff; cursor: pointer;
-    box-shadow: var(--dp-shadow);
-    z-index: 2147483646; display:flex; align-items:center; justify-content:center;
+    position:fixed; right:24px; bottom:24px; z-index:999999;
+    width:56px; height:56px; border-radius:50%;
+    border:none; outline:none; cursor:pointer;
+    background:${ACCENT}; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.18);
+    display:flex; align-items:center; justify-content:center;
   `;
   // kleines Chat-SVG
-  btn.innerHTML = `
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4 14c-.6 0-1-.4-1-1V7c0-1.7 1.3-3 3-3h9c1.7 0 3 1.3 3 3v6c0 1.7-1.3 3-3 3H9l-3.2 2.4c-.6.4-1.4 0-1.4-.7V14Z" fill="#fff"/>
-    </svg>`;
+  btn.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8z"/>
+  </svg>`;
   document.body.appendChild(btn);
 
+  // Iframe (kompaktes Fenster)
+  const frame = document.createElement("iframe");
+  frame.id = "dp-frame";
+  frame.title = TITLE;
+  frame.src = "chat.html"; // gleiche Repo-Root-Datei
+  frame.style.cssText = `
+    position:fixed; right:24px; bottom:92px; z-index:999998;
+    width:360px; height:520px; display:none; border:0;
+    border-radius:14px; box-shadow:0 16px 48px rgba(0,0,0,.22); background:#fff;
+    max-width:calc(100vw - 32px); max-height:calc(100vh - 140px);
+  `;
+  document.body.appendChild(frame);
+
   // Toggle
-  const toggle = () => {
-    const open = iframe.style.display === 'none';
-    iframe.style.display = open ? 'block' : 'none';
-    iframe.setAttribute('aria-hidden', open ? 'false' : 'true');
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  };
-  btn.addEventListener('click', toggle);
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && iframe.style.display !== 'none') toggle();
+  let open = false;
+  btn.addEventListener("click", () => {
+    open = !open;
+    frame.style.display = open ? "block" : "none";
+    if (open) {
+      // Konfiguration an das Iframe schicken
+      frame.contentWindow?.postMessage({type:"dp_init", endpoint:ENDPOINT, title:TITLE, accent:ACCENT}, "*");
+    }
   });
 
-  // Übergabe der Endpoint-URL an das Iframe (postMessage)
-  window.addEventListener('message', (ev) => {
-    if (ev.source === iframe.contentWindow && ev.data === 'datapilot:need-endpoint') {
-      iframe.contentWindow.postMessage({ type: 'datapilot:endpoint', endpoint: ENDPOINT }, '*');
-    } 
+  // Falls jemand das Iframe direkt lädt, erneut die Config senden, wenn es bereit meldet
+  window.addEventListener("message", (e) => {
+    if (e?.data?.type === "dp_ready") {
+      frame.contentWindow?.postMessage({type:"dp_init", endpoint:ENDPOINT, title:TITLE, accent:ACCENT}, "*");
+    }
   });
 })();
