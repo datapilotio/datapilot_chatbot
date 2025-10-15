@@ -1,86 +1,98 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Datapilot Chatbot</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    #chatbox {
-      width: 90%;
-      max-width: 400px;
-      height: 500px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    #messages {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      font-size: 14px;
-    }
-    #input {
-      display: flex;
-      border-top: 1px solid #ddd;
-    }
-    #input input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      outline: none;
-    }
-    #input button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-    }
-    #input button:hover {
-      background: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <div id="chatbox">
-    <div id="messages"></div>
-    <div id="input">
-      <input id="userInput" type="text" placeholder="Schreib eine Nachricht..." />
-      <button onclick="sendMessage()">Senden</button>
-    </div>
-  </div>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat</title>
+  <link rel="stylesheet" href="styles.css">
   <script>
-    const messages = document.getElementById("messages");
+    // Endpoint wird vom Elternfenster geliefert
+    let ENDPOINT = "";
+    window.parent.postMessage('datapilot:need-endpoint','*');
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'datapilot:endpoint') ENDPOINT = e.data.endpoint || "";
+    });
 
-    function appendMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.innerHTML = `<b>${sender}:</b> ${text}`;
-      messages.appendChild(msg);
-      messages.scrollTop = messages.scrollHeight;
+    // Zeitformat "HH:MM Uhr"
+    function timeStr(d=new Date()) {
+      const pad = (n)=> String(n).padStart(2,"0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())} Uhr`;
     }
 
     async function sendMessage() {
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
+      const input = document.getElementById('dp-input');
+      const text  = input.value.trim();
       if (!text) return;
-      appendMessage("Du", text);
-      input.value = "";
 
-      // --- Beispielantwort (später ersetzen mit API)
-      appendMessage("Datapilot", "Ich bin dein Test-Chatbot! 🤖");
+      append('user', text);
+      input.value = '';
+      input.focus();
+
+      // Request an deinen Pipedream-Webhook
+      try {
+        const res = await fetch(ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            sessionId: sessionStorage.getItem('dp_sid') || (()=>{
+              const id = Math.random().toString(36).slice(2);
+              sessionStorage.setItem('dp_sid', id);
+              return id;
+            })(),
+            url: document.referrer || location.href
+          })
+        });
+        const data = await res.json().catch(()=> ({}));
+        const reply = data.reply || data.message || 'Vielen Dank – ich kümmere mich darum.';
+        append('bot', reply);
+      } catch (err) {
+        append('bot', 'Verbindungsfehler – bitte später erneut versuchen.');
+        console.error(err);
+      }
     }
+
+    function append(who, text) {
+      const wrap = document.getElementById('dp-messages');
+      const box  = document.createElement('div');
+      box.className = `dp-msg ${who === 'user' ? 'from-user' : 'from-bot'}`;
+      box.innerText = text;
+      const t = document.createElement('div');
+      t.className='dp-time';
+      t.innerText = timeStr();
+      const group = document.createElement('div');
+      group.appendChild(box);
+      group.appendChild(t);
+      wrap.appendChild(group);
+      wrap.scrollTop = wrap.scrollHeight;
+    }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.getElementById('dp-send').onclick = sendMessage;
+      document.getElementById('dp-input').addEventListener('keydown',(e)=>{
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault(); sendMessage();
+        }
+      });
+      // Begrüßung nur beim ersten Laden
+      if (!sessionStorage.getItem('dp_greeted')) {
+        append('bot','👋 Hallo! Ich bin Max. Wie darf ich Sie ansprechen?');
+        sessionStorage.setItem('dp_greeted','1');
+      }
+    });
   </script>
+</head>
+<body style="margin:0;height:100vh;">
+  <div class="dp-wrap" role="dialog" aria-label="Chat">
+    <div class="dp-header">
+      <span class="logo">⚙️</span>
+      <div>Max – Datapilot Assistent</div>
+    </div>
+    <div id="dp-messages" class="dp-messages"></div>
+    <div class="dp-inputbar">
+      <input id="dp-input" placeholder="Nachricht schreiben…" autocomplete="off" />
+      <button id="dp-send" title="Senden">Senden</button>
+    </div>
+  </div>
 </body>
-</html> 
+</html>
