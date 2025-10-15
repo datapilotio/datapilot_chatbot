@@ -50,4 +50,4 @@
     const visible = iframe.style.display === 'block';
     iframe.style.display = visible ? 'none' : 'block';
   };
-})(); 
+})();
