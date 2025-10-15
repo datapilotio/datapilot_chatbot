@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chat</title>
+<style>
+  :root { --dp-accent:#2563eb; --dp-bg:#ffffff; --dp-text:#0f172a; --dp-muted:#64748b; }
+  html,body { height:100%; margin:0; background:var(--dp-bg); color:var(--dp-text);
+              font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  .wrap { display:flex; flex-direction:column; height:100%; }
+  .head { background:var(--dp-accent); color:#fff; padding:.9rem 1rem; border-radius:14px 14px 0 0;
+          display:flex; align-items:center; gap:.5rem; }
+  .head .logo { width:22px; height:22px; display:grid; place-items:center; background:rgba(255,255,255,.14);
+                border-radius:50%; }
+  .log { flex:1; padding:12px; overflow:auto; background:#f8fafc; }
+  .bubble { max-width:80%; padding:.65rem .75rem; border-radius:12px; margin:.25rem 0; line-height:1.35; }
+  .me     { margin-left:auto; background:#e8f1ff; }
+  .bot    { background:#ffffff; border:1px solid #e5e7eb; }
+  .time   { font-size:12px; color:var(--dp-muted); margin:.15rem .25rem 0; }
+  .row    { display:flex; flex-direction:column; }
+  .input { display:flex; gap:.5rem; padding:.6rem; background:#fff; border-top:1px solid #e5e7eb; border-radius:0 0 14px 14px; }
+  .input input { flex:1; padding:.7rem .85rem; border:1px solid #cbd5e1; border-radius:10px; outline:none; font:inherit; }
+  .input button { background:var(--dp-accent); border:none; color:#fff; border-radius:10px; padding:.7rem 1rem; font:inherit; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">⚙️</div>
+    <div id="title">Assistent</div>
+  </div>
+
+  <div id="log" class="log"></div>
+
+  <form id="form" class="input">
+    <input id="msg" autocomplete="off" placeholder="Nachricht schreiben…" />
+    <button type="submit">Senden</button>
+  </form>
+</div>
+
+<script>
+  // Dem Parent sagen, dass wir bereit sind – damit er uns die Config senden kann
+  window.parent?.postMessage({type:"dp_ready"}, "*");
+
+  // Laufzeit-Config
+  let ENDPOINT = "";
+  let TITLE = "Assistent";
+  let ACCENT = "#2563eb";
+
+  // pro Besucher eindeutige Session + sichtbarer Gastname
+  const sessionId = (crypto?.randomUUID?.() || Math.random().toString(36).slice(2)) + "-" + Date.now();
+  const guestName = "Gast-" + Math.floor(1000 + Math.random()*9000);
+
+  const $log = document.getElementById("log");
+  const $form = document.getElementById("form");
+  const $msg  = document.getElementById("msg");
+  const $title = document.getElementById("title");
+
+  function ts() {
+    return new Date().toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"}) + " Uhr";
+  }
+  function addBubble(text, who) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const b = document.createElement("div");
+    b.className = "bubble " + (who === "me" ? "me" : "bot");
+    b.textContent = text;
+    const t = document.createElement("div");
+    t.className = "time";
+    t.textContent = ts();
+    row.appendChild(b); row.appendChild(t);
+    $log.appendChild(row);
+    $log.scrollTop = $log.scrollHeight;
+  }
+
+  // Startnachricht
+  function greet() {
+    addBubble(`👋 Hallo! Ich bin ${TITLE}. Ich nenne Sie vorerst „${guestName}“. Wie kann ich Ihnen helfen?`, "bot");
+  }
+
+  // Nachrichten senden
+  async function ask(text) {
+    // sofort anzeigen
+    addBubble(text, "me");
+
+    try {
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text, sessionId,
+          url: document.referrer || location.origin,
+          ctx: { guestName }
+        }),
+      });
+      const json = await res.json().catch(()=> ({}));
+      const reply = json?.reply || "Vielen Dank für Ihre Nachricht. Ein Kollege prüft das und meldet sich.";
+      addBubble(reply, "bot");
+    } catch(e) {
+      addBubble("Entschuldigung, die Verbindung ist gerade gestört. Bitte versuchen Sie es in Kürze erneut.", "bot");
+    }
+  }
+
+  $form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = ($msg.value || "").trim();
+    if (!text) return;
+    $msg.value = "";
+    ask(text);
+  });
+
+  // Konfig aus dem Parent erhalten
+  window.addEventListener("message", (e) => {
+    if (e?.data?.type === "dp_init") {
+      ENDPOINT = e.data.endpoint || ENDPOINT;
+      TITLE = e.data.title || TITLE;
+      ACCENT = e.data.accent || ACCENT;
+      document.querySelector(":root").style.setProperty("--dp-accent", ACCENT);
+      $title.textContent = TITLE;
+      if (!$log.dataset.greeted) { $log.dataset.greeted = "1"; greet(); }
+    }
+  });
+
+  // Fallback, wenn jemand chat.html direkt öffnet (ohne Parent)
+  setTimeout(()=> {
+    if (!$log.dataset.greeted) { $log.dataset.greeted = "1"; greet(); }
+  }, 600);
+</script>
+</body>
+</html>
