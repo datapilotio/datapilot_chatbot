@@ -53,6 +53,6 @@
   window.addEventListener('message', (ev) => {
     if (ev.source === iframe.contentWindow && ev.data === 'datapilot:need-endpoint') {
       iframe.contentWindow.postMessage({ type: 'datapilot:endpoint', endpoint: ENDPOINT }, '*');
-    }
+    } 
   });
 })();
