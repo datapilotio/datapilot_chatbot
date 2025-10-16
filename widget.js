@@ -51,4 +51,4 @@
       frame.contentWindow?.postMessage({type:"dp_init", endpoint:ENDPOINT, title:TITLE, accent:ACCENT}, "*");
     }
   });
-})(); 
+})();
