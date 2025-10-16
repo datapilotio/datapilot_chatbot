@@ -1,7 +1,8 @@
 (function () {
-  const WEBHOOK = window.DP_WEBHOOK;
+  // 👉 HIER DEINE PIPEDREAM-URL EINTRAGEN:
+  const WEBHOOK = "https://eo639chyfs9mcu4.m.pipedream.net";
 
-  // UI erzeugen
+  // Chat-Button (das blaue Symbol unten rechts)
   const fab = document.createElement("button");
   fab.className = "dp-fab";
   fab.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">
@@ -9,6 +10,7 @@
   </svg>`;
   document.body.appendChild(fab);
 
+  // Chatfenster
   const chat = document.createElement("div");
   chat.className = "dp-chat";
   chat.innerHTML = `
@@ -29,12 +31,12 @@
   const sendBtn = chat.querySelector("button");
   const closeEl = chat.querySelector(".close");
 
-  // Session + Name
-  const sessionId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+  // Benutzername + Sitzung
+  const sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
   const guestName = "Gast-" + Math.floor(1000 + Math.random() * 9000);
 
-  // Öffnen/Schließen
-  fab.onclick   = () => chat.classList.toggle("open");
+  // Öffnen / Schließen
+  fab.onclick = () => chat.classList.toggle("open");
   closeEl.onclick = () => chat.classList.remove("open");
 
   // Hilfsfunktionen
@@ -52,7 +54,7 @@
   // Begrüßung
   addMsg(`Hallo! Ich bin Assistent. Ich nenne Sie vorerst „${guestName}“. Wie kann ich helfen?`);
 
-  // Senden
+  // Nachricht senden
   async function send() {
     const text = inputEl.value.trim();
     if (!text) return;
@@ -71,13 +73,12 @@
 
       console.log("BOT status:", res.status, data);
 
-      // Erwartet: {ok, reply, time, name}
       const botText = data?.reply || "Entschuldigung, gerade gab es ein Problem.";
       const t = data?.time || now();
 
       addMsg(botText, "bot", t);
     } catch (e) {
-      console.log("Fetch error:", e);
+      console.error("Fetch error:", e);
       addMsg("Entschuldigung, die Verbindung ist fehlgeschlagen. Bitte später erneut versuchen.", "bot");
     }
   }
