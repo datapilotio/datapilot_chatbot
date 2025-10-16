@@ -1,12 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Datapilot Chatbot</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Datapilot • Chat-Widget</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h2>Website ist aktiv ✅</h2>
-  <p>Diese Seite wird über GitHub Pages bereitgestellt.</p>
+  <!-- Seite kann völlig leer sein; das Widget hängt sich selbst an -->
+  <script>
+    // Widget-Konfiguration
+    window.DP_WIDGET = {
+      webhook: "https://eo639chyfs9mcu4.m.pipedream.net",   // <— deine Pipedream URL
+      botName: "Max – Datapilot Assistent",
+      brandColor: "#2563eb",           // blau
+      welcome: "👋 Hallo! Ich bin Max. Wie darf ich Sie ansprechen?",
+      businessTone: true,               // professionelle Antworten aktivieren
+      useRandomCustomerName: true       // für jeden Chat ein neuer Kundenname
+    };
+  </script>
+  <script src="widget.js" defer></script>
 </body>
 </html>
